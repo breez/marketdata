@@ -71,17 +71,17 @@ func getRates(ctx context.Context, client *cryptocomparego.Client) {
 		priceRequest := cryptocomparego.NewPriceRequest("BTC", []string{"USD", "EUR", "GBP", "JPY"})
 		priceList, _, err := client.Price.List(ctx, priceRequest)
 
-		if err != nil {
-			log.Panicf("Error in PriceMulti.List: %v", err)
-		}
-
 		rates := make(map[string]string)
-		for _, coin := range priceList {
-			rates[coin.Name] = fmt.Sprintf("%f", coin.Value)
+		if err != nil {
+			log.Printf("Error in PriceMulti.List: %v", err)
+		} else {
+			for _, coin := range priceList {
+				rates[coin.Name] = fmt.Sprintf("%f", coin.Value)
+			}
 		}
 		err = updateKeyFields("RATES:BTC", 600, rates)
 		if err != nil {
-			log.Panicf("Error in updateKeyFields: %v", err)
+			log.Printf("Error in updateKeyFields: %v", err)
 		}
 		time.Sleep(30 * time.Second)
 	}

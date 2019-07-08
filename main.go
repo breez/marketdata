@@ -50,17 +50,19 @@ func redisConnect() error {
 func updateKeyFields(key string, ttl int, fields map[string]string) error {
 	redisConn := redisPool.Get()
 	defer redisConn.Close()
-	var args []interface{}
-	args = append(args, key)
-	for k, value := range fields {
-		args = append(args, k)
-		args = append(args, value)
+	if len(fields) > 0 {
+		var args []interface{}
+		args = append(args, key)
+		for k, value := range fields {
+			args = append(args, k)
+			args = append(args, value)
+		}
+		_, err := redisConn.Do("HMSET", args...)
+		if err != nil {
+			log.Printf("Error in HMSET: %v", err)
+		}
 	}
-	_, err := redisConn.Do("HMSET", args...)
-	if err != nil {
-		log.Printf("Error in HMSET: %v", err)
-	}
-	_, err = redisConn.Do("EXPIRE", key, ttl)
+	_, err := redisConn.Do("EXPIRE", key, ttl)
 	return err
 }
 

@@ -2,14 +2,20 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"math/big"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
-	"github.com/lucazulian/cryptocomparego"
-	"github.com/lucazulian/cryptocomparego/context"
+	"github.com/tidwall/gjson"
+)
+
+const (
+	yadioURL = "https://api.yadio.io/json"
 )
 
 var (
@@ -18,9 +24,7 @@ var (
 
 func main() {
 	redisConnect()
-	client := cryptocomparego.NewClient(nil)
-	ctx := context.TODO()
-	getRates(ctx, client)
+	getRates()
 }
 
 func redisConnect() error {
@@ -66,22 +70,45 @@ func updateKeyFields(key string, ttl int, fields map[string]string) error {
 	return err
 }
 
-func getRates(ctx context.Context, client *cryptocomparego.Client) {
-	for {
-		priceRequest := cryptocomparego.NewPriceRequest("BTC", []string{"USD", "EUR", "GBP", "JPY"})
-		priceList, _, err := client.Price.List(ctx, priceRequest)
+func getYadioRates() (map[string]string, error) {
+	c := &http.Client{Timeout: 10 * time.Second}
 
-		rates := make(map[string]string)
+	r, err := c.Get(yadioURL)
+	if err != nil {
+		return nil, fmt.Errorf("Get(%v): %w", yadioURL, err)
+	}
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("ioutil.ReadAll(): %w", err)
+	}
+	json := string(body)
+	rates := make(map[string]string)
+	rates["VES"] = fmt.Sprintf("%f", gjson.Get(json, "VES.price").Float())
+	usd := gjson.Get(json, "BTC.price").Float()
+	rates["USD"] = fmt.Sprintf("%f", usd)
+	bigUsd := big.NewFloat(usd)
+	rates["EUR"] = fmt.Sprintf("%f", gjson.Get(json, "BTC.eur").Float())
+
+	for _, currency := range []string{"COP", "CLP", "DOP", "UYU", "BRL", "PEN", "ARS", "MXN", "GBP", "RUB", "CNY", "JPY", "CAD", "AUD", "SGD", "CHF", "SEK", "KRW", "INR", "NOK", "TTD", "PYG", "TRY", "GTQ", "CRC", "ILS", "PAB", "VND", "AED", "HKD", "IDR", "DKK", "BOB", "XAU", "XAG", "XPT"} {
+		usdCurrency := gjson.Get(json, "USD."+currency).Float()
+		cur, _ := (new(big.Float).Mul(bigUsd, big.NewFloat(usdCurrency))).Float64()
+		rates[currency] = fmt.Sprintf("%f", cur)
+	}
+	//log.Printf("%#v", rates)
+	return rates, nil
+}
+
+func getRates() {
+	for {
+		rates, err := getYadioRates()
 		if err != nil {
-			log.Printf("Error in PriceMulti.List: %v", err)
+			log.Printf("Error in getYadioRates(): %v", err)
 		} else {
-			for _, coin := range priceList {
-				rates[coin.Name] = fmt.Sprintf("%f", coin.Value)
+			err = updateKeyFields("RATES:BTC", 600, rates)
+			if err != nil {
+				log.Printf("Error in updateKeyFields: %v", err)
 			}
-		}
-		err = updateKeyFields("RATES:BTC", 600, rates)
-		if err != nil {
-			log.Printf("Error in updateKeyFields: %v", err)
 		}
 		time.Sleep(30 * time.Second)
 	}

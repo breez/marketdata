@@ -90,7 +90,11 @@ func getYadioRates() (map[string]string, error) {
 	bigUsd := big.NewFloat(usd)
 	rates["EUR"] = fmt.Sprintf("%f", gjson.Get(json, "BTC.eur").Float())
 
-	for _, currency := range []string{"COP", "CLP", "DOP", "UYU", "BRL", "PEN", "ARS", "MXN", "GBP", "RUB", "CNY", "JPY", "CAD", "AUD", "SGD", "CHF", "SEK", "KRW", "INR", "NOK", "TTD", "PYG", "TRY", "GTQ", "CRC", "ILS", "PAB", "VND", "AED", "HKD", "IDR", "DKK", "BOB"} {
+	for _, currency := range []string{
+		"COP", "CLP", "DOP", "UYU", "BRL", "PEN", "ARS", "MXN", "GBP", "RUB",
+		"CNY", "JPY", "CAD", "AUD", "SGD", "CHF", "SEK", "KRW", "INR", "NOK",
+		"TTD", "PYG", "TRY", "GTQ", "CRC", "ILS", "PAB", "VND", "AED", "HKD",
+		"IDR", "DKK", "BOB", "NZD", "PHP", "CZK", "PLN"} {
 		usdCurrency := gjson.Get(json, "USD."+currency).Float()
 		cur, _ := (new(big.Float).Mul(bigUsd, big.NewFloat(usdCurrency))).Float64()
 		rates[currency] = fmt.Sprintf("%f", cur)

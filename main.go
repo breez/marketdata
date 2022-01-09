@@ -95,7 +95,7 @@ func getYadioRates() (map[string]string, error) {
 		"CNY", "JPY", "CAD", "AUD", "SGD", "CHF", "SEK", "KRW", "INR", "NOK",
 		"TTD", "PYG", "TRY", "GTQ", "CRC", "ILS", "PAB", "VND", "AED", "HKD",
 		"IDR", "DKK", "BOB", "NZD", "PHP", "CZK", "PLN", "PKR", "ZAR", "NAD",
-		"RON", "ANG"} {
+		"RON", "ANG", "JMD", "HUF", "MYR"} {
 		usdCurrency := gjson.Get(json, "USD."+currency).Float()
 		cur, _ := (new(big.Float).Mul(bigUsd, big.NewFloat(usdCurrency))).Float64()
 		rates[currency] = fmt.Sprintf("%f", cur)

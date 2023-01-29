@@ -96,6 +96,7 @@ func getYadioRates() (map[string]string, error) {
 		"TTD", "PYG", "TRY", "GTQ", "CRC", "ILS", "PAB", "VND", "AED", "HKD",
 		"IDR", "DKK", "BOB", "NZD", "PHP", "CZK", "PLN", "PKR", "ZAR", "NAD",
 		"RON", "ANG", "JMD", "HUF", "MYR", "XOF", "THB", "TWD", "HNL", "NGN",
+		"KES",
 	} {
 		usdCurrency := gjson.Get(json, "USD."+currency).Float()
 		cur, _ := (new(big.Float).Mul(bigUsd, big.NewFloat(usdCurrency))).Float64()
